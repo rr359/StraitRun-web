@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0, user-scalable=no, shrink-to-fit=yes">
+  <title>Unity Web Player | Strait Run</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background: #231f20;
+      overflow: hidden;
+    }
+    #unity-container {
+      position: absolute;
+      left: 0; top: 0; right: 0; bottom: 0;
+      width: 100%;
+      height: 100%;
+    }
+    #unity-canvas {
+      width: 100% !important;
+      height: 100% !important;
+      display: block;
+      background: #231f20;
+    }
+    #unity-loading-bar {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: 200px;
+      display: none;
+    }
+    #unity-loading-title {
+      color: #ffffff;
+      font-family: Helvetica, Arial, sans-serif;
+      font-size: 14px;
+      text-align: center;
+      margin-bottom: 10px;
+    }
+    #unity-progress-bar-empty {
+      width: 100%;
+      height: 14px;
+      border: 1px solid #ffffff44;
+      border-radius: 7px;
+      overflow: hidden;
+      background: #ffffff11;
+    }
+    #unity-progress-bar-full {
+      width: 0%;
+      height: 100%;
+      background: #ffffffff;
+      border-radius: 7px;
+    }
+    #unity-warning {
+      position: absolute;
+      left: 50%;
+      top: 5%;
+      transform: translateX(-50%);
+      background: white;
+      padding: 5px;
+      display: none;
+      font-family: Helvetica, Arial, sans-serif;
+      font-size: 13px;
+    }
+    #unity-fullscreen-button {
+      position: absolute;
+      right: 10px;
+      bottom: 10px;
+      padding: 6px 10px;
+      background: #00000088;
+      color: #ffffff;
+      border: 1px solid #ffffff44;
+      border-radius: 4px;
+      font-family: Helvetica, Arial, sans-serif;
+      font-size: 12px;
+      cursor: pointer;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="unity-container">
+    <canvas id="unity-canvas" tabindex="-1"></canvas>
+    <div id="unity-loading-bar">
+      <div id="unity-loading-title">Strait Run</div>
+      <div id="unity-progress-bar-empty">
+        <div id="unity-progress-bar-full"></div>
+      </div>
+    </div>
+    <div id="unity-warning"></div>
+    <div id="unity-fullscreen-button">Fullscreen</div>
+  </div>
+  <script>
+    var canvas = document.querySelector("#unity-canvas");
+
+    function unityShowBanner(msg, type) {
+      var warningBanner = document.querySelector("#unity-warning");
+      function updateBannerVisibility() {
+        warningBanner.style.display = warningBanner.children.length ? 'block' : 'none';
+      }
+      var div = document.createElement('div');
+      div.innerHTML = msg;
+      warningBanner.appendChild(div);
+      if (type == 'error') div.style = 'background: red; padding: 10px;';
+      else {
+        if (type == 'warning') div.style = 'background: yellow; padding: 10px;';
+        setTimeout(function() {
+          warningBanner.removeChild(div);
+          updateBannerVisibility();
+        }, 5000);
+      }
+      updateBannerVisibility();
+    }
+
+    var buildUrl = "Build";
+    var loaderUrl = buildUrl + "/Default WebGL.loader.js";
+    var config = {
+      arguments: [],
+      dataUrl: buildUrl + "/Default WebGL.data.gz",
+      frameworkUrl: buildUrl + "/Default WebGL.framework.js.gz",
+      codeUrl: buildUrl + "/Default WebGL.wasm.gz",
+      streamingAssetsUrl: "StreamingAssets",
+      companyName: "Strait Run",
+      productName: "Strait Run",
+      productVersion: "1.0",
+      showBanner: unityShowBanner,
+    };
+
+    document.querySelector("#unity-loading-bar").style.display = "block";
+
+    var script = document.createElement("script");
+    script.src = loaderUrl;
+    script.onload = () => {
+      createUnityInstance(canvas, config, (progress) => {
+        document.querySelector("#unity-progress-bar-full").style.width = 100 * progress + "%";
+      }).then((unityInstance) => {
+        document.querySelector("#unity-loading-bar").style.display = "none";
+        var fs = document.querySelector("#unity-fullscreen-button");
+        // Desktop only: on touch screens this HTML button would sit on top of the game's
+        // BOOST button, and iPhone Safari has no element fullscreen at all. The game fits
+        // its frame without it.
+        var canFullscreen = document.fullscreenEnabled || document.webkitFullscreenEnabled;
+        var finePointer = !window.matchMedia || window.matchMedia("(pointer: fine)").matches;
+        fs.style.display = (canFullscreen && finePointer) ? "block" : "none";
+        fs.onclick = () => { unityInstance.SetFullscreen(1); };
+      }).catch((message) => {
+        alert(message);
+      });
+    };
+    document.body.appendChild(script);
+  </script>
+</body>
+</html>
+
